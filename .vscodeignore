@@ -1,0 +1,20 @@
+**
+!out/**
+!dist/**
+!resources/**
+!package.json
+!README.md
+!LICENSE
+!CHANGELOG.md
+
+# Never ship source maps or dev files
+**/*.map
+**/*.md
+!README.md
+!CHANGELOG.md
+
+# Trim unneeded pdf.js assets
+resources/pdf.js/web/compressed.tracemonkey-pldi-09.pdf
+resources/pdf.js/web/debugger.css
+resources/pdf.js/web/debugger.mjs
+resources/pdf.js/BUILD_INFO

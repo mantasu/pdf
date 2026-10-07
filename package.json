@@ -1,0 +1,231 @@
+{
+  "name": "df",
+  "displayName": "PDF Viewer & Editor",
+  "description": "View and edit PDFs directly in VS Code: highlight, annotate, draw, sign, fill forms and manipulate pages",
+  "version": "0.0.3",
+  "publisher": "mantasu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mantasu/pdf"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "pdf",
+    "viewer",
+    "editor",
+    "annotate",
+    "highlight",
+    "signature",
+    "comment",
+    "document"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "check:pdfjs": "node scripts/check-pdfjs.mjs",
+    "test": "vitest run --coverage",
+    "package": "npm run compile && npm run check:pdfjs && npx @vscode/vsce package",
+    "release": "npm run compile && npm run check:pdfjs && semantic-release"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "df",
+      "properties": {
+        "df.defaultZoomValue": {
+          "type": "string",
+          "default": "auto",
+          "scope": "resource",
+          "enum": [
+            "auto",
+            "page-actual",
+            "page-fit",
+            "page-width",
+            "50",
+            "75",
+            "100",
+            "125",
+            "150",
+            "200"
+          ],
+          "description": "Default zoom level when opening a PDF."
+        },
+        "df.sidebarViewOnLoad": {
+          "type": "number",
+          "default": 0,
+          "scope": "resource",
+          "enum": [
+            -1,
+            0,
+            1,
+            2
+          ],
+          "enumDescriptions": [
+            "Restore previous state",
+            "None",
+            "Thumbnails",
+            "Outline"
+          ],
+          "description": "Sidebar panel to show when opening a PDF."
+        },
+        "df.annotationEditorMode": {
+          "type": "string",
+          "default": "none",
+          "scope": "resource",
+          "enum": [
+            "none",
+            "highlight",
+            "freetext",
+            "ink"
+          ],
+          "enumDescriptions": [
+            "Start in select/pan mode",
+            "Start with the highlight tool active",
+            "Start with the text tool active",
+            "Start with the draw tool active"
+          ],
+          "description": "Annotation tool that is active when a PDF is opened. All tools are always available in the toolbar."
+        },
+        "df.highlightColors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "Yellow=#FFF200",
+            "Orange=#FF8A00",
+            "Blue=#54C8FF",
+            "Pink=#FF6EC7",
+            "Red=#FF3B30"
+          ],
+          "scope": "resource",
+          "markdownDescription": "Highlighter color presets as `Name=#RRGGBB` pairs. Defaults are saturated, clearly distinct hues (the pdf.js defaults put a pale orange next to yellow, which is hard to tell apart)."
+        },
+        "df.freeTextColor": {
+          "type": "string",
+          "default": "#000000",
+          "scope": "resource",
+          "description": "Default color for text-box (free text) annotations."
+        },
+        "df.freeTextFontSize": {
+          "type": "number",
+          "default": 12,
+          "scope": "resource",
+          "description": "Default font size for text-box (free text) annotations."
+        },
+        "df.freeTextFontFamily": {
+          "type": "string",
+          "default": "Helvetica",
+          "scope": "resource",
+          "enum": [
+            "Helvetica",
+            "Helvetica Bold",
+            "Helvetica Oblique",
+            "Helvetica Bold Oblique",
+            "Times New Roman",
+            "Times New Roman Bold",
+            "Times New Roman Italic",
+            "Times New Roman Bold Italic",
+            "Courier",
+            "Courier Bold",
+            "Courier Oblique",
+            "Courier Bold Oblique"
+          ],
+          "description": "Default font for text-box (free text) annotations. The Text tool's popup also has a Font dropdown with regular/bold/italic variants. PDF's standard base fonts (embedded-free, readable everywhere) are limited to these families."
+        },
+        "df.inkColor": {
+          "type": "string",
+          "default": "#e52222",
+          "scope": "resource",
+          "description": "Default pen color for freehand drawing."
+        },
+        "df.authorName": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Author name stamped onto new comments and annotations (`/T`). Shown in the comment sidebar and readable by Acrobat and other PDF readers. Defaults to your operating-system user name (the home-directory name) when left empty."
+        },
+        "df.printCommand": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Shell command used for printing. The PDF is written to a temp file and its path is passed as the sole argument, e.g. `lpr` or `lp -d myprinter`. When empty, the PDF is opened with the OS default handler."
+        }
+      }
+    },
+    "customEditors": [
+      {
+        "viewType": "df.viewer",
+        "displayName": "PDF Viewer & Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.pdf"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "df.rotatePage",
+        "title": "Rotate Page",
+        "category": "df"
+      },
+      {
+        "command": "df.deletePage",
+        "title": "Delete Current Page",
+        "category": "df"
+      },
+      {
+        "command": "df.movePageUp",
+        "title": "Move Current Page Up",
+        "category": "df"
+      },
+      {
+        "command": "df.movePageDown",
+        "title": "Move Current Page Down",
+        "category": "df"
+      },
+      {
+        "command": "df.insertBlankPageBefore",
+        "title": "Insert Blank Page Before",
+        "category": "df"
+      },
+      {
+        "command": "df.insertBlankPageAfter",
+        "title": "Insert Blank Page After",
+        "category": "df"
+      },
+      {
+        "command": "df.print",
+        "title": "Print Current PDF",
+        "category": "df"
+      }
+    ]
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "*",
+    "@semantic-release/commit-analyzer": "*",
+    "@semantic-release/git": "*",
+    "@semantic-release/github": "*",
+    "@semantic-release/npm": "*",
+    "@semantic-release/release-notes-generator": "*",
+    "@types/node": "*",
+    "@types/vscode": "^1.75.0",
+    "@vitest/coverage-v8": "*",
+    "semantic-release": "*",
+    "semantic-release-vsce": "*",
+    "typescript": "*",
+    "vitest": "*"
+  }
+}

@@ -1,0 +1,25 @@
+# Dependency and build
+node_modules/
+coverage/
+out/
+
+# Bundled output
+dist/
+
+# Vendored pdf.js (fetched with `make pdfjs`)
+resources/pdf.js/
+
+# Package
+*.vsix
+package-lock.json
+
+# Context (reference repos, temporary)
+context/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/

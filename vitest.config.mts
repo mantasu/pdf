@@ -7,7 +7,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reportsDirectory: "coverage",
-      include: ["src/**/*.ts"],
+      include: ["src/**/*.ts", "resources/viewer/geometry.mjs", "resources/viewer/annotations.mjs", "resources/viewer/markdown.mjs"],
       reporter: ["text", "html", "lcovonly"],
       thresholds: {
         lines: 100,

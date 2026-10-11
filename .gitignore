@@ -6,8 +6,11 @@ out/
 # Bundled output
 dist/
 
-# Vendored pdf.js (fetched with `make pdfjs`)
+# Vendored pdf.js (fetched by `npm install`, see scripts/pdfjs.mjs)
 resources/pdf.js/
+
+# Text-box fonts (fetched by `npm install`, see scripts/pdfjs.mjs)
+resources/fonts/
 
 # Package
 *.vsix

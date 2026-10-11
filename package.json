@@ -1,16 +1,17 @@
 {
-  "name": "df",
+  "name": "pdf",
   "displayName": "PDF Viewer & Editor",
-  "description": "View and edit PDFs directly in VS Code: highlight, annotate, draw, sign, fill forms and manipulate pages",
+  "description": "Read, highlight, comment on and draw over PDFs in VS Code, Acrobat-compatible",
   "version": "0.0.3",
   "publisher": "mantasu",
+  "icon": "resources/media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/mantasu/pdf"
   },
   "license": "MIT",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.95.0"
   },
   "categories": [
     "Visualization",
@@ -19,27 +20,31 @@
   "keywords": [
     "pdf",
     "viewer",
-    "editor",
     "annotate",
     "highlight",
-    "signature",
     "comment",
-    "document"
+    "sticky note",
+    "drawing",
+    "research",
+    "paper"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
   "scripts": {
-    "compile": "tsc -p ./",
-    "check:pdfjs": "node scripts/check-pdfjs.mjs",
+    "postinstall": "node scripts/pdfjs.mjs",
+    "compile": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\" && tsc -p ./",
+    "bundle": "esbuild src/extension.ts --bundle --minify --platform=node --format=cjs --target=node20 --external:vscode --outfile=out/extension.js",
+    "vscode:prepublish": "npm run compile && node scripts/pdfjs.mjs && npm run bundle",
     "test": "vitest run --coverage",
-    "package": "npm run compile && npm run check:pdfjs && npx @vscode/vsce package",
-    "release": "npm run compile && npm run check:pdfjs && semantic-release"
+    "test:e2e": "npm run compile && node test/e2e/run.cjs",
+    "package": "npx @vscode/vsce package",
+    "release": "semantic-release"
   },
   "contributes": {
     "configuration": {
-      "title": "df",
+      "title": "PDF Viewer & Editor",
       "properties": {
-        "df.defaultZoomValue": {
+        "pdf.defaultZoomValue": {
           "type": "string",
           "default": "auto",
           "scope": "resource",
@@ -57,7 +62,7 @@
           ],
           "description": "Default zoom level when opening a PDF."
         },
-        "df.sidebarViewOnLoad": {
+        "pdf.sidebarViewOnLoad": {
           "type": "number",
           "default": 0,
           "scope": "resource",
@@ -73,86 +78,38 @@
             "Thumbnails",
             "Outline"
           ],
-          "description": "Sidebar panel to show when opening a PDF."
+          "description": "pdf.js side panel to show when opening a PDF."
         },
-        "df.annotationEditorMode": {
-          "type": "string",
-          "default": "none",
-          "scope": "resource",
-          "enum": [
-            "none",
-            "highlight",
-            "freetext",
-            "ink"
-          ],
-          "enumDescriptions": [
-            "Start in select/pan mode",
-            "Start with the highlight tool active",
-            "Start with the text tool active",
-            "Start with the draw tool active"
-          ],
-          "description": "Annotation tool that is active when a PDF is opened. All tools are always available in the toolbar."
-        },
-        "df.highlightColors": {
+        "pdf.presetColors": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[^=]+=#[0-9a-fA-F]{6}$"
           },
           "default": [
-            "Yellow=#FFF200",
-            "Orange=#FF8A00",
-            "Blue=#54C8FF",
-            "Pink=#FF6EC7",
-            "Red=#FF3B30"
+            "Yellow=#FFD60A",
+            "Red=#FF453A",
+            "Purple=#AF52DE",
+            "Green=#30D158",
+            "Blue=#409CFF"
           ],
+          "maxItems": 5,
           "scope": "resource",
-          "markdownDescription": "Highlighter color presets as `Name=#RRGGBB` pairs. Defaults are saturated, clearly distinct hues (the pdf.js defaults put a pale orange next to yellow, which is hard to tell apart)."
+          "markdownDescription": "Preset colors as `Name=#RRGGBB` (up to five), shared by every tool; text and Fill & Sign marks use black and darker shades of them. Any other color can be picked with the custom color button."
         },
-        "df.freeTextColor": {
-          "type": "string",
-          "default": "#000000",
-          "scope": "resource",
-          "description": "Default color for text-box (free text) annotations."
-        },
-        "df.freeTextFontSize": {
-          "type": "number",
-          "default": 12,
-          "scope": "resource",
-          "description": "Default font size for text-box (free text) annotations."
-        },
-        "df.freeTextFontFamily": {
-          "type": "string",
-          "default": "Helvetica",
-          "scope": "resource",
-          "enum": [
-            "Helvetica",
-            "Helvetica Bold",
-            "Helvetica Oblique",
-            "Helvetica Bold Oblique",
-            "Times New Roman",
-            "Times New Roman Bold",
-            "Times New Roman Italic",
-            "Times New Roman Bold Italic",
-            "Courier",
-            "Courier Bold",
-            "Courier Oblique",
-            "Courier Bold Oblique"
-          ],
-          "description": "Default font for text-box (free text) annotations. The Text tool's popup also has a Font dropdown with regular/bold/italic variants. PDF's standard base fonts (embedded-free, readable everywhere) are limited to these families."
-        },
-        "df.inkColor": {
-          "type": "string",
-          "default": "#e52222",
-          "scope": "resource",
-          "description": "Default pen color for freehand drawing."
-        },
-        "df.authorName": {
+        "pdf.authorName": {
           "type": "string",
           "default": "",
           "scope": "resource",
-          "markdownDescription": "Author name stamped onto new comments and annotations (`/T`). Shown in the comment sidebar and readable by Acrobat and other PDF readers. Defaults to your operating-system user name (the home-directory name) when left empty."
+          "markdownDescription": "Author name on new comments and drawings (`/T`). Defaults to your operating-system user name."
         },
-        "df.printCommand": {
+        "pdf.copilot.model": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Language model for the viewer's **Ask Copilot** actions: a model id or name as listed by **PDF: Choose Copilot Model…**, e.g. a Claude, GPT or Gemini model from Copilot, or one added with your own API key. Empty picks a Copilot model. `@pdf` in the chat uses the model chosen there."
+        },
+        "pdf.printCommand": {
           "type": "string",
           "default": "",
           "scope": "resource",
@@ -162,7 +119,7 @@
     },
     "customEditors": [
       {
-        "viewType": "df.viewer",
+        "viewType": "pdf.viewer",
         "displayName": "PDF Viewer & Editor",
         "selector": [
           {
@@ -174,43 +131,73 @@
     ],
     "commands": [
       {
-        "command": "df.rotatePage",
+        "command": "pdf.rotatePage",
         "title": "Rotate Page",
-        "category": "df"
+        "category": "PDF"
       },
       {
-        "command": "df.deletePage",
+        "command": "pdf.deletePage",
         "title": "Delete Current Page",
-        "category": "df"
+        "category": "PDF"
       },
       {
-        "command": "df.movePageUp",
+        "command": "pdf.movePageUp",
         "title": "Move Current Page Up",
-        "category": "df"
+        "category": "PDF"
       },
       {
-        "command": "df.movePageDown",
+        "command": "pdf.movePageDown",
         "title": "Move Current Page Down",
-        "category": "df"
+        "category": "PDF"
       },
       {
-        "command": "df.insertBlankPageBefore",
+        "command": "pdf.insertBlankPageBefore",
         "title": "Insert Blank Page Before",
-        "category": "df"
+        "category": "PDF"
       },
       {
-        "command": "df.insertBlankPageAfter",
+        "command": "pdf.insertBlankPageAfter",
         "title": "Insert Blank Page After",
-        "category": "df"
+        "category": "PDF"
       },
       {
-        "command": "df.print",
+        "command": "pdf.print",
         "title": "Print Current PDF",
-        "category": "df"
+        "category": "PDF"
+      },
+      {
+        "command": "pdf.chooseCopilotModel",
+        "title": "Choose Copilot Model…",
+        "category": "PDF"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "pdf.assistant",
+        "name": "pdf",
+        "fullName": "PDF Viewer & Editor",
+        "description": "Ask about the open PDF (its text, your selection and the comments)",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "summarize",
+            "description": "Summarize the document"
+          },
+          {
+            "name": "explain",
+            "description": "Explain the passage selected in the PDF"
+          },
+          {
+            "name": "comments",
+            "description": "Go through the comments and replies"
+          }
+        ]
       }
     ]
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "mathjax-full": "^3.2.2",
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
@@ -221,8 +208,13 @@
     "@semantic-release/npm": "*",
     "@semantic-release/release-notes-generator": "*",
     "@types/node": "*",
-    "@types/vscode": "^1.75.0",
+    "@types/vscode": "~1.95.0",
     "@vitest/coverage-v8": "*",
+    "esbuild": "^0.28.2",
+    "gifenc": "^1.0.3",
+    "omggif": "^1.0.10",
+    "playwright-core": "^1.63.0",
+    "pngjs": "^7.0.0",
     "semantic-release": "*",
     "semantic-release-vsce": "*",
     "typescript": "*",

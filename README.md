@@ -1,112 +1,95 @@
-# df
+# PDF Viewer & Editor
 
-View and edit PDFs directly inside VS Code. Annotations, highlights, drawing, signatures, form filling and page manipulation — all in the editor, saved straight back to the file.
+Read, annotate, fill and sign PDFs (research papers especially) without leaving VS Code. Everything is saved as standard PDF annotations, so the same file opens in Acrobat, Preview and browsers.
+
+![Highlighting with a maths comment, asking Copilot, drawing, filling a form and signing, then the saved file in Preview](resources/media/banner.gif)
+
+> [!TIP]
+> Open [`resources/media/example.pdf`](resources/media/example.pdf) for a guided tour.
 
 ## Features
 
-**Annotation (Adobe-style, right in the viewer toolbar):**
-
-- 🔦 Highlight, underline and strikethrough text
-- ✏️ Freehand drawing with color/thickness/opacity options
-- 🅰️ Add text boxes (free text)
-- 🖼️ Insert images
-- ✍️ Sign — draw, type, or upload your signature
-- 🧽 Eraser for your own marks, with undo/redo
-- 📝 Fill in interactive PDF forms
-
-**Commenting (Adobe Reader-style):**
-
-- 💬 Standalone sticky notes: click the _Add comment_ (💬) button in the toolbar, then click anywhere on a page — no text selection needed
-- Author name shown on every comment and stored in the PDF (`/T`); defaults to your OS user name, override with `df.authorName`
-- 🧵 Threaded replies in the comments sidebar (standard `/IRT` + `/RT /R` annotation relationships)
-- ✅ Mark comment threads resolved/unresolved (standard `/State /Closed` + `/StateModel /Review`, shown struck-through and dimmed, just like Acrobat)
-- ✏️ Edit or 🗑️ delete any comment — including ones already saved in the file; double-click a note icon on the page to edit it in place
-- Single-click a note icon to highlight its row in the Comments sidebar (Acrobat-style page ↔ panel selection); row actions appear on hover
-- Comments saved as standard PDF text annotations (`/Subtype /Text` + `/Popup`) and highlight/ink comments (`/Subtype /Highlight` etc. with `/Contents` + `/T`): Acrobat and other readers show, edit, and delete them natively, including the note pop-up
-- Deleting a parent comment also removes its replies from the file
-
-**Pages:**
-
-- 🗂️ Manage pages inside the viewer: open the thumbnails sidebar and enter _Manage pages_ mode to select, rotate, delete, copy/paste, drag-reorder, and export pages — or right-click a page for one-click actions
-- ➕ Add pages without leaving the viewer: right-click → _Insert Blank Page Before/After_, or the _Add File…_ button in manage-pages mode to merge another PDF/image
-- `df: Rotate Page`, `df: Delete Current Page`, `df: Move Page Up/Down`, `df: Insert Blank Page Before/After` in the Command Palette act on the page you're viewing
-
-**Print:**
-
-- `Ctrl+P` / `Cmd+P` or the toolbar's Print button. VS Code webviews cannot print directly, so df hands the current PDF (annotations included) to your system: set `df.printCommand` to a command like `lpr` and it prints silently; otherwise the PDF opens with your OS default handler.
-
-**Files:**
-
-- Live dirty state: the editor tab shows the ● unsaved dot; `Ctrl+S`/`Cmd+S` writes annotations back into the `.pdf`
-- Right-click anywhere for a context menu: highlight the selection, save, print, or run a page operation
-- Automatic reload when the file changes on disk (e.g. git checkout, external editor)
-- Relative links inside PDFs open sibling files with regular VS Code editors
-- Dark/light theme integration
-
-## How it works
-
-The extension registers a custom editor (`df.viewer`) for `*.pdf` files. Rendering and annotation use [pdf.js](https://mozilla.github.io/pdf.js/) inside a webview; the vendored copy carries a small set of source patches (`scripts/patch-pdfjs.mjs`, applied by `make pdfjs`) that persist the annotation author (`/T`), write sticky-note/`/IRT`-reply annotation dictionaries on save, and add author/reply/edit/delete UI to the comments sidebar. On top of that, `resources/bootstrap.mjs` is a thin entry point that wires small ES modules under `resources/df/`:
-
-| Module | Responsibility |
+| | |
 | --- | --- |
-| `util.mjs` | VS Code host bridge, injected config, viewer accessors |
-| `config.mjs` | pdf.js viewer options and tool-color/size defaults |
-| `dialog.mjs` | the comment write / reply / edit dialog |
-| `comments.mjs` | comment model: author `/T`, sticky notes, `/IRT` replies, delete cascade |
-| `notes.mjs` | Note tool, on-page note icons, page ↔ sidebar selection |
-| `sidebar.mjs` | comments-panel refresh and reply/edit/delete/resolve actions |
-| `contextmenu.mjs` | the right-click menu |
-| `document.mjs` | open / serialize / save / print / dirty-tracking lifecycle |
+| 🖍️ **Annotate** | Highlight, underline, comment, reply and resolve, as in Acrobat |
+| ✍️ **Rich text** | Bold, italic, `code` and `$\LaTeX$` in comments and text boxes |
+| 🎨 **Draw** | Pen, shapes, arrows, images, and text boxes in six fonts |
+| 🖊️ **Fill & sign** | Forms, signatures and ✓ ✗ marks |
+| ✨ **Copilot** | Explain or summarize a passage with any Copilot model (Claude, GPT, …); `@pdf` in Copilot Chat |
+| 📄 **Pages** | Rotate, reorder, insert, print; undo everything |
 
-Page commands run in the extension host with [pdf-lib](https://github.com/Hopding/pdf-lib) and rewrite the file on disk.
+| | |
+| --- | --- |
+| <img src="resources/media/screenshot-comment.png" alt="A comment card beside the page" width="520"> | <img src="resources/media/screenshot-tools.png" alt="The drawing tools' options" width="240"> |
+| Comments open beside the page, joined to their mark. | Each tool's dropdown holds its colours, sizes and fonts. |
 
-## Known limitations
+> [!NOTE]
+> The PDF's own text and images cannot be edited: in Acrobat that is the paid "Edit PDF", and PDF pages cannot be reflowed.
 
-- **Editing text that is already in a PDF is not possible.** pdf.js overlays annotations on top of the original content; there is no reflowing of existing text like Acrobat's _Edit PDF_. Use the text-box tool to cover or annotate existing text.
-- The text-box tool has color and size presets (`df.freeTextColor`, `df.freeTextFontSize`) but pdf.js offers no font-family picker.
-- Comments created here save as standard `/Subtype /Text` annotations with a `/Popup` pop-up; the pop-up opens on click in Acrobat but the in-viewer editing UI is df's dialog instead of Acrobat's floating note.
-- Deleting a comment that was already saved in the file hides its icon immediately; the underlying annotation is removed from the file when you save.
-- Editing an existing free-text box cannot reflow its text; delete it and add a new one.
+## Keys
+
+| Key | Action |
+| --- | --- |
+| `Ctrl/Cmd+S` · `Ctrl/Cmd+P` | Save · print |
+| `Ctrl/Cmd+Z` · `Ctrl/Cmd+Shift+Z` | Undo · redo (in a text field: the typing) |
+| `Delete` · `Escape` | Delete the selection · close, cancel or deselect |
+| `S` · `H` | Select · Hand (pan) |
+| `Ctrl/Cmd+B` · `I` · `U` | Bold · italic · underline while writing |
+| `Ctrl/Cmd+Enter` | Post a comment or reply |
+
+## Settings
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `pdf.authorName` | OS user name | Author of new annotations |
+| `pdf.presetColors` | 5 colours | `Name=#RRGGBB` presets shared by every tool |
+| `pdf.defaultZoomValue` | `auto` | Zoom when opening a PDF |
+| `pdf.sidebarViewOnLoad` | `0` | Side panel when opening a PDF |
+| `pdf.printCommand` | default PDF app | Command that prints the file path given to it, e.g. `lpr` |
+| `pdf.copilot.model` | a Copilot model | Model for Ask Copilot, as picked with **PDF: Choose Copilot Model…** |
+
+> [!IMPORTANT]
+> Ask Copilot and `@pdf` use VS Code's language models: GitHub Copilot's (Claude, GPT, Gemini, …) or one added with your own API key, never a key of ours; VS Code asks once. Ask Copilot sends the passage and its page to the model chosen with **PDF: Choose Copilot Model…**; `@pdf` sends the document's text, your selection and the comments to the model picked in the chat.
 
 ## Development
 
 ```sh
-make setup    # install Node LTS + dependencies
-make pdfjs    # download the pinned pdf.js distribution into resources/pdf.js
-make test     # run unit tests with coverage
-make check    # verify vendored pdf.js invariants
+make setup    # Node.js and dependencies; downloads the newest pdf.js (verified) and the text-box fonts
+make test     # unit tests, 100% coverage
+make e2e      # the real webview in Chrome, and in VS Code when installed
+make example  # regenerate resources/media/example.pdf
+make media    # re-record banner.gif and the screenshots in VS Code
 ```
 
-`node scripts/check-adobe-compat.mjs <file.pdf>` independently validates that a saved PDF's comment annotations (sticky notes, `/Popup`, `/IRT` replies, `/State` resolution) are spec-compliant and readable by other PDF implementations.
+Press `F5` to try the extension. `npm install` keeps `resources/pdf.js` on the newest pdf.js release (a packaged build ships whichever one was there) and puts the text-box fonts in `resources/fonts`.
 
-Press `F5` in VS Code to launch an Extension Development Host, then open any `.pdf`.
+<details>
+<summary>How it works</summary>
 
-To bump the pdf.js version: edit `pdfjs.version` (`<version>@<sha1-of-zip>`) and run `make pdfjs && make check`.
+| Concern | Owner |
+| --- | --- |
+| Pages, text selection, links, forms, find, thumbnails | [pdf.js](https://mozilla.github.io/pdf.js/), the unmodified release (`resources/pdf.js`) |
+| Reading and writing annotations | the extension host, with [pdf-lib](https://github.com/Hopding/pdf-lib) (`src/pdf/`) |
+| Drawing and editing annotations | the viewer layer (`resources/viewer/`) |
+| Undo/redo, dirty state, save, hot exit | VS Code's custom-editor edit stack (`src/editor/`) |
+| Ask Copilot, `@pdf` | VS Code's Language Model and Chat APIs (`src/copilot/`) |
 
-> `context/` holds third-party reference repos for development and is git-ignored.
+The host reads the annotations it manages into a JSON model and gives pdf.js a copy of the file without them, so nothing is drawn twice. One codec per kind (`src/pdf/kinds.ts`) reads its fields and writes its keys and appearance stream, so every reader shows the same thing. Annotations it does not manage are left to pdf.js and only get their comment edited. Saving merges the model back: untouched annotations stay byte-identical, deleted ones go with their replies.
 
-## How to use
+Saved annotation types are all standard: Highlight, Underline, StrikeOut and Squiggly with QuadPoints; Text notes with Popups and `/IRT` replies; review states (Resolved is Acrobat's Completed); FreeText with `/DA`, `/DS` and `/RC` (maths drawn as vector outlines, fonts beyond Helvetica, Times and Courier embedded as subsets); Ink; Square; Circle; Line; image Stamps.
 
-1. Open any `.pdf` — it opens in the PDF editor (right-click → _Open With..._ to switch editors). Try [`examples/example.pdf`](examples/example.pdf) (`make example` regenerates it): page 1 lists the tools, page 2 is rotated for the rotate command, page 3 has fillable form fields.
-2. Pick a tool in the toolbar (highlight, draw, add text, image, signature), apply it on the page.
-3. `Ctrl+S` / `Cmd+S` to save, or use the toolbar's Save button.
-4. For page operations, right-click a page, use _Manage pages_ in the thumbnails sidebar, or run `df: Rotate Page` etc. from the Command Palette.
-5. `Ctrl+P` / `Cmd+P` to print.
+```
+src/          extension.ts, protocol.ts (host <-> viewer messages)
+  editor/     custom editor: provider, document, webview session, HTML, printing
+  pdf/        model, per-kind codecs, reader, writer, rich text, maths, images, pages
+  copilot/    prompts, Language Model API, @pdf chat participant
+resources/viewer/   the webview: main.mjs (entry), one module per part of the UI, viewer.css
+scripts/      pdf.js and font downloads (pdfjs.mjs), example.pdf, README media
+test/         unit tests and end-to-end suites (e2e/)
+```
 
-## Settings
-
-| Setting                        | Default   | Description                                                               |
-| ------------------------------ | --------- | ------------------------------------------------------------------------- |
-| `df.defaultZoomValue`     | `auto`    | Default zoom when opening a PDF                                           |
-| `df.sidebarViewOnLoad`    | `0`       | Sidebar shown on open (none/thumbnails/outline)                           |
-| `df.annotationEditorMode` | `none`    | Tool active on open (all tools always available)                          |
-| `df.highlightColors`      | 5 presets | Highlighter palette as `Name=#RRGGBB` pairs                               |
-| `df.authorName`           | *(empty)* | Author shown on annotations; empty uses your OS user name                 |
-| `df.freeTextColor`        | `#000000` | Default text-box color                                                    |
-| `df.freeTextFontSize`     | `12`      | Default text-box font size                                                |
-| `df.inkColor`             | `#e52222` | Default pen color for drawing                                             |
-| `df.printCommand`         | *(empty)* | Shell command that prints the PDF file passed as its argument, e.g. `lpr` |
+</details>
 
 ## License
 
-MIT (this extension). pdf.js is Apache-2.0 licensed by Mozilla and bundled from official releases.
+MIT. pdf.js (Apache-2.0) and MathJax (Apache-2.0) are bundled unmodified, as are the Roboto, Lora and Comic Neue fonts (SIL Open Font License; each license is in `resources/fonts`).

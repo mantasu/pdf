@@ -1,0 +1,1560 @@
+/*
+ * Everything the extension draws over the pdf.js viewer. Loaded after pdf.js's own
+ * viewer.css and built on its theme variables, so light and dark themes come for free.
+ */
+
+:root {
+  --pdf-panel-width: 320px;
+  --pdf-accent: var(--focus-ring-color, #0060df);
+  --pdf-surface: var(--doorhanger-bg-color, #fff);
+  --pdf-border: var(--doorhanger-border-color, rgb(12 12 13 / 0.2));
+  --pdf-text: var(--main-color, #181819);
+  --pdf-muted: color-mix(in srgb, var(--pdf-text) 60%, transparent);
+  --pdf-hover: color-mix(in srgb, var(--pdf-text) 9%, transparent);
+  --pdf-radius: 6px;
+  --pdf-shadow: 0 6px 20px rgb(0 0 0 / 0.22), 0 1px 3px rgb(0 0 0 / 0.18);
+  --pdf-font: var(--vscode-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+  --pdf-control: color-mix(in srgb, var(--pdf-text) 22%, transparent);
+  /* Review states (core.mjs STATUSES); Marked is Acrobat's private checkmark. */
+  --pdf-status-accepted: light-dark(#0969da, #58a6ff);
+  --pdf-status-rejected: light-dark(#cf222e, #ff7b72);
+  --pdf-status-cancelled: light-dark(#6e7781, #8b949e);
+  --pdf-status-completed: light-dark(#1a7f37, #3fb950);
+  --pdf-status-marked: light-dark(#57606a, #8b949e);
+}
+
+[data-status="Accepted"] {
+  --pdf-status: var(--pdf-status-accepted);
+}
+
+[data-status="Rejected"] {
+  --pdf-status: var(--pdf-status-rejected);
+}
+
+[data-status="Cancelled"] {
+  --pdf-status: var(--pdf-status-cancelled);
+}
+
+[data-status="Completed"] {
+  --pdf-status: var(--pdf-status-completed);
+}
+
+[data-status="Marked"] {
+  --pdf-status: var(--pdf-status-marked);
+}
+
+/* Webview bodies come with side padding from VS Code; the viewer wants the full width. */
+body {
+  padding: 0;
+}
+
+/* pdf.js owns the scroll position. Browser scroll anchoring would make the page jump
+   whenever an overlay such as the text editor comes or goes. */
+#viewerContainer {
+  overflow-anchor: none;
+}
+
+/* Selected page text: pdf.js's own tint (22% blue, or the OS accent color) is hard to see on many
+   screens. Multiplied in, a stronger blue keeps the letters dark. The first rule is for pdf.js's
+   painted selection, the second for the browser's when pdf.js does not paint it. */
+.pdfViewer .canvasWrapper .selection {
+  background: rgb(0 95 255 / 0.4);
+  mix-blend-mode: multiply;
+}
+
+.pdfViewer .textLayer:not(.selectionRendering) ::selection {
+  background: rgb(0 95 255 / 0.35);
+}
+
+/* --- Overlays on each page ------------------------------------------------------- */
+
+.pdfViewer .page > :is(.pdf-markup-layer, .pdf-draw-layer) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Multiply blending, as in the highlight appearance written to the PDF: the text stays legible. */
+.pdfViewer .page > .pdf-markup-layer {
+  mix-blend-mode: multiply;
+}
+
+.pdf-draft {
+  opacity: 0.7;
+}
+
+.pdfViewer .page > .pdf-ui-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  /* A size container: boxes measured in cqw scale with the zoom by themselves. */
+  container-type: size;
+}
+
+.pdf-textbox,
+.pdf-image {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  transform-origin: center;
+}
+
+/* Vertical text is placed letter by letter (layers.mjs verticalLetters), as the PDF writer places it. */
+.pdf-vertical-letter {
+  position: absolute;
+  text-align: center;
+  white-space: pre;
+}
+
+.pdf-textbox {
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* $...$ formulas, measured in ems (richtext.mjs) the same way the PDF appearance is. */
+.pdf-math svg {
+  display: inline-block;
+  overflow: visible;
+}
+
+.pdf-math-error {
+  text-decoration: underline wavy #d33;
+}
+
+/* Formatting inside text boxes has to match what gets written into the PDF, so VS Code's
+   own webview styling of <code> is undone here. */
+.pdf-textbox code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-family: "Courier New", Courier, "Liberation Mono", monospace;
+  font-size: 1em;
+}
+
+.pdf-textbox :is(sup, sub) {
+  font-size: 70%;
+  line-height: 0;
+}
+
+.pdf-textbox-format {
+  position: fixed;
+  z-index: 100000;
+  border: 1px solid var(--pdf-border);
+  border-radius: var(--pdf-radius);
+  background: var(--pdf-surface);
+  box-shadow: var(--pdf-shadow);
+  color: var(--pdf-text);
+}
+
+.pdf-textbox-format .pdf-format-bar {
+  margin: 0;
+  padding: 2px;
+  border: 0;
+}
+
+.pdf-textbox-editor {
+  overflow: visible;
+  outline: 1px dashed var(--pdf-accent);
+  background: rgb(255 255 255 / 0.6);
+  pointer-events: auto;
+  cursor: text;
+  user-select: text;
+}
+
+.pdf-image {
+  object-fit: fill;
+  user-select: none;
+}
+
+.pdf-note {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35));
+}
+
+.pdf-note > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-note:hover {
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.5));
+}
+
+/* A resolved, rejected or cancelled thread's note steps back; its status badge stays bright. */
+.pdf-note.pdf-closed > svg {
+  opacity: 0.5;
+}
+
+.pdf-note:is(.selected, .pdf-draft) {
+  outline: 2px solid var(--pdf-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pdf-note.pdf-draft {
+  outline-style: dashed;
+}
+
+.pdf-reply-count,
+.pdf-status-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  background: #3b3b3b;
+  color: #fff;
+  font: 600 9px/14px var(--pdf-font);
+  text-align: center;
+}
+
+.pdf-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: var(--pdf-status, #3b3b3b);
+}
+
+.pdf-status-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+.pdf-thread-header .pdf-status-badge {
+  position: static;
+  flex: none;
+}
+
+/* Review status next to the author: tinted text with its icon; in cards it opens the status menu. */
+.pdf-status-pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  padding: 0 7px 0 5px;
+  border: none;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--pdf-status) 14%, transparent);
+  color: var(--pdf-status);
+  font: 600 11px/18px var(--pdf-font);
+  white-space: nowrap;
+}
+
+.pdf-status-pill svg {
+  width: 12px;
+  height: 12px;
+}
+
+button.pdf-status-pill {
+  cursor: pointer;
+}
+
+button.pdf-status-pill:hover {
+  background: color-mix(in srgb, var(--pdf-status) 24%, transparent);
+}
+
+/* The one-click resolve ✓ turns green under the pointer. */
+.pdf-resolve:hover {
+  color: var(--pdf-status-completed);
+}
+
+.pdf-outline {
+  position: absolute;
+  margin: -3px;
+  padding: 2px;
+  box-sizing: content-box;
+  border: 1px dashed var(--pdf-accent);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.pdf-outline.selected {
+  border-style: solid;
+}
+
+.pdf-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -5px 0 0 -5px;
+  border: 1px solid var(--pdf-accent);
+  border-radius: 2px;
+  background: #fff;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+#viewerContainer.pdf-over-annotation .textLayer :is(span, br) {
+  cursor: pointer;
+}
+
+#viewerContainer.pdf-over-object,
+#viewerContainer.pdf-over-object :is(.page, .textLayer span, .textLayer br) {
+  cursor: move;
+}
+
+/* One cursor per tool: pen, crosshair for anything placed or dragged out,
+   I-beam for text marks and text boxes. */
+#viewerContainer:is(.pdf-tool-note, .pdf-tool-line, .pdf-tool-arrow, .pdf-tool-square, .pdf-tool-circle, .pdf-tool-image, .pdf-tool-signature, .pdf-tool-check, .pdf-tool-cross, .pdf-tool-dot) :is(.page, .page *) {
+  cursor: crosshair;
+}
+
+#viewerContainer.pdf-tool-ink :is(.page, .page *) {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 21l1.2-4.8L16.5 3.9a2 2 0 0 1 2.8 0l.8.8a2 2 0 0 1 0 2.8L7.8 19.8Z' fill='%23fff' stroke='%23000' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M3 21l1.2-4.8 3.6 3.6Z' fill='%23000'/%3E%3C/svg%3E") 3 21, crosshair;
+}
+
+#viewerContainer:is(.pdf-tool-freetext, .pdf-tool-highlight, .pdf-tool-underline, .pdf-tool-strikeout, .pdf-tool-squiggly) :is(.page, .page *) {
+  cursor: text;
+}
+
+/* While a dragging tool is active, the page text cannot be selected. */
+#viewerContainer:is(.pdf-tool-ink, .pdf-tool-line, .pdf-tool-arrow, .pdf-tool-square, .pdf-tool-circle, .pdf-tool-note, .pdf-tool-image, .pdf-tool-signature, .pdf-tool-check, .pdf-tool-cross, .pdf-tool-dot) .textLayer {
+  user-select: none;
+}
+
+/* --- Tool buttons in the pdf.js toolbar --------------------------------------------- */
+
+/* Keep pdf.js's toolbar off the window edges (its >> menu touched the border). */
+#toolbarContainer #toolbarViewer {
+  box-sizing: border-box;
+  padding-inline: 4px 8px;
+}
+
+#pdfToolbar {
+  gap: 1px;
+  align-items: center;
+}
+
+#pdfToolbar .toolbarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--main-color);
+}
+
+/* These buttons hold inline SVG, so pdf.js's mask-image icon placeholder is switched off. */
+#pdfToolbar .toolbarButton::before {
+  content: none;
+}
+
+#pdfToolbar .toolbarButton > svg {
+  width: 16px;
+  height: 16px;
+}
+
+#pdfToolbar .toolbarButton.toggled {
+  background-color: var(--toggled-btn-bg-color, rgb(0 0 0 / 0.15));
+}
+
+#pdfToolbar .toolbarButton:disabled {
+  opacity: 0.4;
+}
+
+#pdfToolbar .pdf-collapsed {
+  display: none;
+}
+
+#pdfToolbar .pdf-split {
+  display: inline-flex;
+  gap: 1px;
+}
+
+#pdfToolbar .pdf-chevron {
+  width: 14px;
+  min-width: 14px;
+  padding: 0;
+  margin-inline-start: -2px;
+}
+
+#pdfToolbar .pdf-chevron > svg {
+  width: 10px;
+  height: 10px;
+}
+
+.pdf-color-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pdf-swatch, #ff0);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.3);
+}
+
+/* --- Floating bars over the page --------------------------------------------------- */
+
+:is(.pdf-quickbar, .pdf-actionbar) {
+  position: fixed;
+  z-index: 100000;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--pdf-border);
+  border-radius: var(--pdf-radius);
+  background: var(--pdf-surface);
+  box-shadow: var(--pdf-shadow);
+  color: var(--pdf-text);
+}
+
+:is(.pdf-quickbar, .pdf-actionbar) .pdf-icon-button {
+  min-width: 28px;
+  height: 28px;
+}
+
+:is(.pdf-quickbar, .pdf-actionbar) .pdf-icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pdf-actionbar .pdf-icon-button.labeled {
+  gap: 4px;
+  width: auto;
+  padding: 0 8px 0 6px;
+  font: 12px var(--pdf-font);
+}
+
+/* --- Tool menus ------------------------------------------------------------------- */
+
+.pdf-tool-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.pdf-variants {
+  display: flex;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--pdf-border);
+}
+
+.pdf-variants .pdf-icon-button {
+  width: 30px;
+  height: 30px;
+}
+
+.pdf-variants .pdf-icon-button.selected {
+  background: var(--pdf-hover);
+  box-shadow: inset 0 0 0 1px var(--pdf-accent);
+}
+
+.pdf-hint {
+  color: var(--pdf-muted);
+  font-size: 11px;
+}
+
+.pdf-keep-tool {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pdf-border);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* An on/off switch drawn over a real checkbox (role="switch"). */
+.pdf-switch {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--pdf-control);
+  appearance: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.pdf-switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  transition: transform 0.15s;
+}
+
+.pdf-switch:checked {
+  background: var(--pdf-accent);
+}
+
+.pdf-switch:checked::before {
+  transform: translateX(12px);
+}
+
+/* --- Signature dialog ----------------------------------------------------------------- */
+
+.pdf-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.35);
+}
+
+.pdf-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(560px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid var(--pdf-border);
+  border-radius: var(--pdf-radius);
+  background: var(--pdf-surface);
+  box-shadow: var(--pdf-shadow);
+  color: var(--pdf-text);
+  font: 13px var(--pdf-font);
+}
+
+.pdf-dialog h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pdf-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--pdf-border);
+}
+
+.pdf-tab {
+  padding: 4px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pdf-tab.selected {
+  border-bottom-color: var(--pdf-accent);
+}
+
+.pdf-signature-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 190px;
+}
+
+.pdf-signature-pad,
+.pdf-signature-preview,
+.pdf-signature-image {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px dashed var(--pdf-border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.pdf-signature-pad {
+  aspect-ratio: 520 / 170;
+  height: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.pdf-signature-preview {
+  overflow: hidden;
+  padding: 8px 12px;
+  color: #000;
+  font-size: 42px;
+  white-space: nowrap;
+}
+
+.pdf-signature-image {
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.pdf-signature-text {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pdf-popover {
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+/* --- Style panel (colors, thickness, opacity, font) ------------------------------------ */
+
+.pdf-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pdf-prop-label {
+  margin-bottom: 4px;
+  color: var(--pdf-muted);
+  font-size: 11px;
+}
+
+.pdf-prop-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+/* A swatch is one element drawn by one background (toolbar.mjs swatchBackground). The drawing is 24 px across but the
+   box is 28: Chrome clips a background to its box rounded to whole pixels, which shaved the ring's outer edge on one
+   side or the other depending on where each swatch fell; with 2 px to spare nothing is cut. The negative margin keeps
+   the spacing of 24 px swatches. */
+.pdf-swatch {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: -2px;
+  padding: 0;
+  border: none;
+  /* No rounded clip: it would cut the ring's outer edge with a rounding of its own (the gradient fades out there). */
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.pdf-custom-color {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pdf-chip {
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--pdf-border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pdf-chip.selected {
+  border-color: var(--pdf-accent);
+  background: var(--pdf-hover);
+}
+
+.pdf-width-sample {
+  display: block;
+  width: 16px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.pdf-mark-style {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+}
+
+.pdf-align {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* For vertical text the alignment icons turn a quarter, so "left" reads as "top". */
+.pdf-turned {
+  display: inline-flex;
+  transform: rotate(90deg);
+}
+
+.pdf-prop-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--pdf-border);
+}
+
+.pdf-align svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pdf-mark-style svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Font family: a button showing the current font in itself, opening a list where each name does the same. */
+/* Neither the button nor the list may size the panel: width 0 and flex-grow leave that to the other rows. */
+.pdf-font-picker {
+  display: inline-flex;
+  flex: 1;
+  width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px 0 8px;
+  border: 1px solid var(--field-border-color, var(--pdf-border));
+  border-radius: 4px;
+  background: var(--field-bg-color, transparent);
+  color: var(--field-color, inherit);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pdf-font-picker span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-font-picker svg {
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+
+.pdf-font-picker[aria-expanded="true"] {
+  border-color: var(--pdf-accent);
+}
+
+.pdf-font-list {
+  display: flex;
+  flex-basis: 100%;
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--pdf-border);
+  border-radius: 6px;
+}
+
+.pdf-font-list[hidden] {
+  display: none;
+}
+
+.pdf-font-option {
+  overflow: hidden;
+  padding: 4px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pdf-font-option:hover {
+  background: var(--pdf-hover);
+}
+
+.pdf-font-option.selected {
+  background: color-mix(in srgb, var(--pdf-accent) 16%, transparent);
+}
+
+/* Opacity: a thin track filled up to the thumb (--pdf-fill, set by toolbar.mjs). */
+.pdf-range {
+  flex: 1;
+  min-width: 100px;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.pdf-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--pdf-accent) var(--pdf-fill, 100%), var(--pdf-control) var(--pdf-fill, 100%));
+}
+
+.pdf-range::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2), 0 1px 3px rgb(0 0 0 / 0.3);
+  appearance: none;
+}
+
+.pdf-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2), 0 0 0 3px color-mix(in srgb, var(--pdf-accent) 45%, transparent);
+}
+
+/* VS Code's webview stylesheet rings every focused input with its focus color; inside the style
+   panel that showed as a box around the slider while dragging. Keyboard focus keeps a ring. */
+.pdf-properties :is(input, select, button):focus {
+  outline: none;
+}
+
+.pdf-properties :is(select, button):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--pdf-accent) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.pdf-switch:focus {
+  outline: none;
+}
+
+.pdf-switch:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pdf-accent) 45%, transparent);
+}
+
+.pdf-properties select {
+  height: 26px;
+  padding: 2px 4px;
+  border: 1px solid var(--field-border-color, var(--pdf-border));
+  border-radius: 4px;
+  background: var(--field-bg-color, transparent);
+  color: var(--field-color, inherit);
+  font: inherit;
+}
+
+.pdf-prop-value {
+  min-width: 36px;
+  color: var(--pdf-muted);
+  font-size: 11px;
+}
+
+/* --- Comments sidebar --------------------------------------------------------------- */
+
+.pdf-panel {
+  position: absolute;
+  top: var(--toolbar-height);
+  inset-inline-end: 0;
+  bottom: 0;
+  width: var(--pdf-panel-width);
+  max-width: 85vw;
+  display: none;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--sidebar-toolbar-bg-color, var(--pdf-surface));
+  border-inline-start: 1px solid var(--pdf-border);
+  color: var(--pdf-text);
+  font: 13px/1.4 var(--pdf-font);
+  z-index: 1;
+}
+
+#outerContainer.pdf-panel-open .pdf-panel {
+  display: flex;
+}
+
+#outerContainer.pdf-panel-open #viewerContainer {
+  inset-inline-end: min(var(--pdf-panel-width), 85vw);
+}
+
+.pdf-panel-resizer {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -3px;
+  width: 6px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.pdf-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 4px 12px;
+}
+
+.pdf-panel-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pdf-panel-count {
+  margin-inline-start: 4px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--pdf-hover);
+  font-weight: 500;
+}
+
+.pdf-panel-filter {
+  margin: 4px 12px 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--field-border-color, var(--pdf-border));
+  border-radius: 4px;
+  background: var(--field-bg-color, transparent);
+  color: var(--field-color, inherit);
+  font: inherit;
+}
+
+.pdf-panel-controls {
+  display: flex;
+  gap: 6px;
+  margin: 0 12px 8px;
+}
+
+.pdf-panel-select {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 4px;
+  border: 1px solid var(--field-border-color, var(--pdf-border));
+  border-radius: 4px;
+  background: var(--field-bg-color, transparent);
+  color: var(--field-color, inherit);
+  font: inherit;
+  font-size: 12px;
+}
+
+.pdf-panel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px 12px;
+}
+
+.pdf-page-heading {
+  margin: 10px 4px 4px;
+  color: var(--pdf-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pdf-card {
+  margin: 4px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--pdf-border);
+  border-radius: var(--pdf-radius);
+  background: var(--pdf-surface);
+  cursor: pointer;
+}
+
+.pdf-card:hover {
+  border-color: color-mix(in srgb, var(--pdf-accent) 50%, var(--pdf-border));
+}
+
+.pdf-card.selected {
+  border-color: var(--pdf-accent);
+  box-shadow: 0 0 0 1px var(--pdf-accent);
+}
+
+/* A status shows as a colored edge; closed threads (resolved, rejected, cancelled) fade back. */
+.pdf-card[data-status] {
+  border-inline-start: 3px solid var(--pdf-status);
+}
+
+.pdf-card.pdf-closed {
+  opacity: 0.6;
+}
+
+.pdf-card.pdf-closed:is(:hover, :focus-within, .selected) {
+  opacity: 1;
+}
+
+/* A card's resolve ✓ shows on hover. */
+.pdf-card .pdf-resolve {
+  flex: none;
+}
+
+.pdf-card:not(:hover, :focus-within) .pdf-resolve {
+  opacity: 0;
+}
+
+.pdf-panel-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.pdf-hide-closed[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--pdf-accent) 18%, transparent);
+  color: var(--pdf-accent);
+}
+
+.pdf-card .pdf-comment-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pdf-card-replies {
+  margin-top: 6px;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--pdf-border);
+}
+
+.pdf-card-reply {
+  margin-top: 4px;
+}
+
+.pdf-card-reply .pdf-author {
+  margin-inline-end: 6px;
+}
+
+.pdf-card-reply .pdf-comment-text {
+  display: inline;
+}
+
+.pdf-panel-empty {
+  padding: 16px 8px;
+  color: var(--pdf-muted);
+  text-align: center;
+}
+
+/* --- Author/date header shared by cards, previews and the sidebar -------------------- */
+
+.pdf-thread-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pdf-thread-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.pdf-author {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-date {
+  overflow: hidden;
+  color: var(--pdf-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-kind-marker {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.pdf-kind-marker.note svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-kind-marker:not(.note) {
+  border-radius: 3px;
+  background: var(--pdf-marker);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+}
+
+.pdf-kind-marker:is(.underline, .strikeout, .squiggly, .other) {
+  height: 4px;
+  margin-block: 7px;
+  border-radius: 2px;
+}
+
+.pdf-comment-text {
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.pdf-comment-text.empty {
+  color: var(--pdf-muted);
+  font-style: italic;
+}
+
+/* --- Comment card ---------------------------------------------------------------------- */
+
+.pdf-popup,
+.pdf-preview,
+.pdf-menu {
+  position: fixed;
+  z-index: 100000;
+  box-sizing: border-box;
+  border: 1px solid var(--pdf-border);
+  border-radius: var(--pdf-radius);
+  background: var(--pdf-surface);
+  box-shadow: var(--pdf-shadow);
+  color: var(--pdf-text);
+  font: 13px/1.4 var(--pdf-font);
+}
+
+.pdf-popup {
+  display: flex;
+  flex-direction: column;
+  width: min(320px, calc(100vw - 24px));
+  max-height: min(480px, calc(100vh - 60px));
+  padding: 10px 12px 12px;
+}
+
+/* Labels shown on hover over icon-only buttons. */
+.pdf-tooltip {
+  position: fixed;
+  z-index: 100003;
+  max-width: 260px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #2b2b30;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  color: #fff;
+  font: 12px/1.4 var(--pdf-font);
+  pointer-events: none;
+}
+
+/* --- Copilot answer card ------------------------------------------------------------- */
+
+.pdf-copilot {
+  gap: 8px;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 60px));
+}
+
+.pdf-copilot-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: grab;
+  font-weight: 600;
+}
+
+.pdf-copilot-header:active {
+  cursor: grabbing;
+}
+
+.pdf-copilot-title {
+  flex: 1;
+}
+
+.pdf-copilot-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.pdf-copilot-quote {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  padding: 2px 8px;
+  border-left: 3px solid color-mix(in srgb, var(--pdf-accent) 55%, transparent);
+  color: var(--pdf-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.pdf-copilot-question {
+  font-weight: 600;
+}
+
+.pdf-copilot-answer {
+  overflow: auto;
+  min-height: 1.4em;
+  overflow-wrap: anywhere;
+}
+
+.pdf-copilot-answer .pdf-paragraph {
+  min-height: 0.6em;
+}
+
+.pdf-copilot-answer code {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--pdf-hover);
+  font-family: var(--vscode-editor-font-family, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 0.92em;
+}
+
+.pdf-copilot-thinking {
+  color: var(--pdf-muted);
+}
+
+.pdf-dots::after {
+  content: "…";
+  animation: pdf-dots 1.2s steps(3, end) infinite;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  width: 0;
+}
+
+@keyframes pdf-dots {
+  to {
+    width: 1.2em;
+  }
+}
+
+.pdf-copilot-error {
+  color: var(--errorWrapper-color, #b42318);
+}
+
+.pdf-copilot-input {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--pdf-border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+/* Leader line tying a floating card to the thing it talks about. */
+.pdf-connector {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  width: 100vw;
+  height: 100vh;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pdf-connector line {
+  stroke: var(--pdf-accent);
+  stroke-width: 1.5;
+  opacity: 0.75;
+}
+
+.pdf-connector circle {
+  fill: var(--pdf-accent);
+}
+
+/* The header is the card's drag handle. */
+.pdf-popup .pdf-thread-header {
+  cursor: grab;
+}
+
+.pdf-popup .pdf-thread-header:active {
+  cursor: grabbing;
+}
+
+.pdf-popup-actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.pdf-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pdf-icon-button:hover {
+  background: var(--pdf-hover);
+}
+
+.pdf-icon-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pdf-popup-body {
+  margin-top: 4px;
+}
+
+/* --- Comment editor and buttons ------------------------------------------------------ */
+
+.pdf-editor {
+  margin-top: 8px;
+  border: 1px solid var(--field-border-color, var(--pdf-border));
+  border-radius: 4px;
+  background: var(--field-bg-color, transparent);
+}
+
+.pdf-editor:focus-within {
+  border-color: var(--pdf-accent);
+  outline: 1px solid var(--pdf-accent);
+}
+
+.pdf-editor-area {
+  min-height: 2.8em;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 6px 8px;
+  color: var(--field-color, inherit);
+  outline: none;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.pdf-editor-area.empty::before {
+  content: attr(data-placeholder);
+  color: var(--pdf-muted);
+  pointer-events: none;
+}
+
+.pdf-format-bar {
+  display: flex;
+  gap: 1px;
+  padding: 2px 4px;
+  border-top: 1px solid var(--pdf-border);
+}
+
+.pdf-format-bar .pdf-icon-button {
+  width: 22px;
+  height: 22px;
+}
+
+/* Lit while the caret sits in text with this format, or typing will apply it. */
+.pdf-format-bar .pdf-icon-button.active {
+  background: color-mix(in srgb, var(--pdf-accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pdf-accent) 55%, transparent);
+  color: var(--pdf-accent);
+}
+
+.pdf-comment-text code,
+.pdf-editor-area code {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--pdf-hover);
+  font-family: var(--vscode-editor-font-family, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 0.92em;
+}
+
+.pdf-edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pdf-button {
+  padding: 4px 12px;
+  border: 1px solid var(--button-secondary-border-color, var(--pdf-border));
+  border-radius: 4px;
+  background: var(--button-secondary-bg-color, transparent);
+  color: var(--button-secondary-fg-color, inherit);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pdf-button:hover:not(:disabled) {
+  background: var(--button-secondary-hover-bg-color, var(--pdf-hover));
+}
+
+.pdf-button.primary {
+  border-color: var(--button-primary-border-color, var(--pdf-accent));
+  background: var(--button-primary-bg-color, var(--pdf-accent));
+  color: var(--button-primary-fg-color, #fff);
+}
+
+.pdf-button.primary:hover:not(:disabled) {
+  background: var(--button-primary-hover-bg-color, var(--pdf-accent));
+}
+
+.pdf-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pdf-replies {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 10px;
+  overflow-y: auto;
+  border-top: 1px solid var(--pdf-border);
+}
+
+.pdf-reply {
+  padding: 8px 0 0 10px;
+}
+
+.pdf-reply-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pdf-reply-actions {
+  display: none;
+  margin-inline-start: auto;
+  gap: 8px;
+}
+
+.pdf-reply:hover .pdf-reply-actions,
+.pdf-reply:focus-within .pdf-reply-actions {
+  display: inline-flex;
+}
+
+.pdf-link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link-fg-color, var(--pdf-accent));
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pdf-reply-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pdf-reply-box .pdf-editor {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.pdf-reply-box .pdf-editor-area {
+  min-height: 1.4em;
+}
+
+/* --- Hover preview ------------------------------------------------------------------------ */
+
+.pdf-preview {
+  width: max-content;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 8px 10px;
+  pointer-events: none;
+}
+
+.pdf-preview .pdf-comment-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pdf-preview-replies {
+  margin-top: 6px;
+  color: var(--pdf-muted);
+  font-size: 11px;
+}
+
+/* --- Menus and popovers -------------------------------------------------------------------- */
+
+.pdf-menu {
+  min-width: 200px;
+  max-width: calc(100vw - 8px);
+  padding: 4px;
+}
+
+.pdf-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pdf-menu-item:is(:hover, :focus-visible):not(:disabled) {
+  background: var(--pdf-hover);
+  outline: none;
+}
+
+.pdf-menu-item:disabled {
+  color: var(--pdf-muted);
+  cursor: default;
+}
+
+.pdf-menu-check {
+  width: 12px;
+  flex: none;
+}
+
+.pdf-menu-swatch {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+
+.pdf-menu-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.pdf-menu-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-menu-label {
+  flex: 1;
+}
+
+.pdf-menu-arrow {
+  color: var(--pdf-muted);
+}
+
+.pdf-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--pdf-border);
+}
+
+/* --- Banner for files whose comments cannot be changed -------------------------------------- */
+
+.pdf-banner {
+  position: absolute;
+  top: var(--toolbar-height);
+  inset-inline: 0;
+  z-index: 2;
+  padding: 4px 12px;
+  background: #fff4ce;
+  color: #3b2e00;
+  font: 12px/1.4 var(--pdf-font);
+}

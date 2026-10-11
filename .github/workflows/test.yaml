@@ -17,9 +17,7 @@ jobs:
           node-version: 24
 
       - run: npm install -g npm@latest
-      - run: make install
-      - run: make pdfjs
-      - run: make check
+      - run: npm install
       - run: npm test
       - uses: codecov/codecov-action@v7
         with:

@@ -1,20 +1,13 @@
 **
-!out/**
-!dist/**
-!resources/**
+!out/extension.js
+!resources/viewer/**
+!resources/pdf.js/build/**
+!resources/pdf.js/web/**
+!resources/pdf.js/LICENSE
+!resources/fonts/**
+!resources/media/icon.png
+!node_modules/mathjax-full/es5/tex-svg-full.js
 !package.json
 !README.md
 !LICENSE
 !CHANGELOG.md
-
-# Never ship source maps or dev files
-**/*.map
-**/*.md
-!README.md
-!CHANGELOG.md
-
-# Trim unneeded pdf.js assets
-resources/pdf.js/web/compressed.tracemonkey-pldi-09.pdf
-resources/pdf.js/web/debugger.css
-resources/pdf.js/web/debugger.mjs
-resources/pdf.js/BUILD_INFO

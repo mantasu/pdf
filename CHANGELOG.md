@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/mantasu/pdf-editor/compare/v1.0.0...v1.1.0) (2026-10-17)
+
+
+### Features
+
+* rename extension to pdf-editor ([db62ecb](https://github.com/mantasu/pdf-editor/commit/db62ecbf252caa1cddcbafaf1b441603c46a91da))
+
 # 1.0.0 (2026-10-17)
 
 

@@ -40,7 +40,7 @@ async function withExample([width, height], script) {
   mkdirSync(join(home, "user", "User"), { recursive: true });
   mkdirSync(folder);
   writeFileSync(join(home, "user", "User", "settings.json"), JSON.stringify(SETTINGS));
-  copyFileSync(join(MEDIA, "example.pdf"), join(folder, "example.pdf"));
+  copyFileSync(join(ROOT, "resources", "example.pdf"), join(folder, "example.pdf"));
   const app = await _electron.launch({
     executablePath: CODE,
     args: [`--extensionDevelopmentPath=${ROOT}`, `--user-data-dir=${home}/user`, `--extensions-dir=${home}/ext`, "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes", "--new-window", folder],

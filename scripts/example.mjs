@@ -1,4 +1,4 @@
-// Builds resources/media/example.pdf: a one-page "paper" explaining the tools, a rotated page and a form,
+// Builds resources/example.pdf: a one-page "paper" explaining the tools, a rotated page and a form,
 // with sample annotations saved through the extension's own writer (run `npm run compile` first).
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -135,4 +135,4 @@ const annotations = [
 
 const out = join(import.meta.dirname, "..", "resources", "media", "example.pdf");
 writeFileSync(out, await mergeAnnotations(await doc.save({ useObjectStreams: false }), annotations, { now: new Date(MORNING) }));
-console.log("resources/media/example.pdf written");
+console.log("resources/example.pdf written");

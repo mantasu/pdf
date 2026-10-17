@@ -2,22 +2,15 @@
 node_modules/
 coverage/
 out/
-
-# Bundled output
 dist/
-
-# Vendored pdf.js (fetched by `npm install`, see scripts/pdfjs.mjs)
-resources/pdf.js/
-
-# Text-box fonts (fetched by `npm install`, see scripts/pdfjs.mjs)
-resources/fonts/
 
 # Package
 *.vsix
 package-lock.json
 
-# Context (reference repos, temporary)
-context/
+# Vendored pdf.js + fontsW
+resources/pdf.js/
+resources/fonts/
 
 # System files
 .DS_Store

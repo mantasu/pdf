@@ -61,9 +61,9 @@ new MutationObserver(matchVsCodeTheme).observe(document.body, { attributes: true
 
 // A webview can neither print nor download, so Print and Save go to the host. pdf.js only looks
 // these methods up while starting, which happens after this module has run.
-PDFViewerApplication.triggerPrinting = () => hostCommand("pdf.print");
+PDFViewerApplication.triggerPrinting = () => hostCommand("pdf-editor.print");
 // pdf.js handles Ctrl/Cmd+P by calling window.print() directly, which does nothing in a webview.
-window.print = () => hostCommand("pdf.print");
+window.print = () => hostCommand("pdf-editor.print");
 PDFViewerApplication.downloadOrSave = async () => hostCommand("workbench.action.files.save");
 
 // --- Host messages ---------------------------------------------------------------
@@ -324,7 +324,7 @@ function routeKey(event) {
   }
   if (withModifier && key === "p") {
     swallow(event);
-    hostCommand("pdf.print");
+    hostCommand("pdf-editor.print");
     return;
   }
   if (withModifier && (key === "z" || key === "y")) {

@@ -29,20 +29,20 @@ import { type OpenDoc, registerChat } from "../copilot/participant";
 import { passagePrompt } from "../copilot/prompts";
 
 export const COMMAND_OPS: ReadonlyArray<[string, PageAction]> = [
-  ["pdf.rotatePage", "rotate"],
-  ["pdf.deletePage", "delete"],
-  ["pdf.movePageUp", "move-up"],
-  ["pdf.movePageDown", "move-down"],
-  ["pdf.insertBlankPageBefore", "insert-before"],
-  ["pdf.insertBlankPageAfter", "insert-after"],
+  ["pdf-editor.rotatePage", "rotate"],
+  ["pdf-editor.deletePage", "delete"],
+  ["pdf-editor.movePageUp", "move-up"],
+  ["pdf-editor.movePageDown", "move-down"],
+  ["pdf-editor.insertBlankPageBefore", "insert-before"],
+  ["pdf-editor.insertBlankPageAfter", "insert-after"],
 ];
 
-const PREFS_KEY = "pdf.preferences";
+const PREFS_KEY = "pdf-editor.preferences";
 
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 export class PdfProvider implements CustomEditorProvider<PdfFile> {
-  static readonly viewType = "pdf.viewer";
+  static readonly viewType = "pdf-editor.viewer";
 
   static register(context: ExtensionContext): PdfProvider {
     const provider = new PdfProvider(context.extensionUri, HtmlBuilder.load(context.extensionUri.fsPath), context.globalState);
@@ -54,12 +54,12 @@ export class PdfProvider implements CustomEditorProvider<PdfFile> {
       ...COMMAND_OPS.map(([command, action]) =>
         commands.registerCommand(command, (page?: unknown) => provider.runPage(action, page)),
       ),
-      commands.registerCommand("pdf.print", () => provider.print()),
+      commands.registerCommand("pdf-editor.print", () => provider.print()),
       // From the viewer's Copilot card: continue in Copilot Chat with @pdf.
-      commands.registerCommand("pdf.askInChat", (query?: unknown, partial?: unknown) =>
+      commands.registerCommand("pdf-editor.askInChat", (query?: unknown, partial?: unknown) =>
         commands.executeCommand("workbench.action.chat.open", { query: typeof query === "string" ? query : "@pdf ", isPartialQuery: partial === true }),
       ),
-      commands.registerCommand("pdf.chooseCopilotModel", () => pickModel()),
+      commands.registerCommand("pdf-editor.chooseCopilotModel", () => pickModel()),
       registerChat(() => provider.currentDoc()),
     );
     return provider;
@@ -298,7 +298,7 @@ export class PdfProvider implements CustomEditorProvider<PdfFile> {
     link.pendingChat.set(msg.requestId, source);
     let error: string | undefined;
     try {
-      const preferred = workspace.getConfiguration("pdf", file.uri).get<string>(MODEL_SETTING, "");
+      const preferred = workspace.getConfiguration("pdf-editor", file.uri).get<string>(MODEL_SETTING, "");
       await askChat(passagePrompt({ ...msg, fileName: basename(file.uri.path) }), source.token, (text) => link.post({ type: "copilot-text", requestId: msg.requestId, text }), preferred);
     } catch (failure) {
       error = source.token.isCancellationRequested ? undefined : reason(failure); // stopping is not an error

@@ -30,7 +30,7 @@ const SETTINGS = {
   "workbench.tips.enabled": false,
   "breadcrumbs.enabled": false,
   "chat.commandCenter.enabled": false,
-  "pdf.authorName": "John",
+  "pdf-editor.authorName": "John",
 };
 
 /** Runs `script(win, frame, folder)` with example.pdf open in a fresh `width`×`height` VS Code window. */

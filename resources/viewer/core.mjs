@@ -44,7 +44,7 @@ export function rememberColor(hex) {
 }
 
 // --- Colors, names, dates --------------------------------------------------------
-// Up to five presets (the `pdf.presetColors` setting), for marks, notes and drawings. Text and
+// Up to five presets (the `pdf-editor.presetColors` setting), for marks, notes and drawings. Text and
 // Fill & Sign marks get five as well: black and darker shades of the presets, which stay readable
 // on a white page (a dark purple reads as black, so it is left out).
 const presets = (config.presetColors?.length ? config.presetColors : [

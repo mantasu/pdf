@@ -92,7 +92,7 @@ export class HtmlBuilder {
   }
 
   private config(webview: Webview, documentUri: Uri, asset: (...parts: string[]) => string): Omit<ViewerConfig, "preferences"> {
-    const settings = workspace.getConfiguration("pdf", documentUri);
+    const settings = workspace.getConfiguration("pdf-editor", documentUri);
     const swatches = parseSwatches(settings.get<unknown[]>("presetColors", [...BASE_SWATCHES]));
     const folder = Uri.joinPath(documentUri, "..");
     return {

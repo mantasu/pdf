@@ -76,14 +76,14 @@ export function isToHost(value: unknown): value is ToHost {
 
 /** Commands the webview may run in the host (toolbar, context menu, keyboard). */
 export const HOST_COMMANDS: ReadonlySet<string> = new Set([
-  "pdf.rotatePage",
-  "pdf.deletePage",
-  "pdf.movePageUp",
-  "pdf.movePageDown",
-  "pdf.insertBlankPageBefore",
-  "pdf.insertBlankPageAfter",
-  "pdf.print",
-  "pdf.askInChat",
+  "pdf-editor.rotatePage",
+  "pdf-editor.deletePage",
+  "pdf-editor.movePageUp",
+  "pdf-editor.movePageDown",
+  "pdf-editor.insertBlankPageBefore",
+  "pdf-editor.insertBlankPageAfter",
+  "pdf-editor.print",
+  "pdf-editor.askInChat",
   "workbench.action.files.save",
   "undo",
   "redo",

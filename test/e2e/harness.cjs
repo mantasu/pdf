@@ -163,12 +163,12 @@ class Host {
       const bytes = await this.build(await this.snapshot());
       fs.writeFileSync(this.savePath, bytes);
       this.saves++;
-    } else if (command === "pdf.print") {
+    } else if (command === "pdf-editor.print") {
       this.printed++;
-    } else if (command === "pdf.askInChat") {
+    } else if (command === "pdf-editor.askInChat") {
       this.chat.push(args);
-    } else if (command.startsWith("pdf.")) {
-      const ops = { "pdf.rotatePage": "rotate", "pdf.deletePage": "delete", "pdf.movePageUp": "move-up", "pdf.movePageDown": "move-down", "pdf.insertBlankPageBefore": "insert-before", "pdf.insertBlankPageAfter": "insert-after" };
+    } else if (command.startsWith("pdf-editor.")) {
+      const ops = { "pdf-editor.rotatePage": "rotate", "pdf-editor.deletePage": "delete", "pdf-editor.movePageUp": "move-up", "pdf-editor.movePageDown": "move-down", "pdf-editor.insertBlankPageBefore": "insert-before", "pdf-editor.insertBlankPageAfter": "insert-after" };
       const merged = await this.build(await this.snapshot());
       const result = await perform(ops[command], merged, args[0] ?? 1);
       if (result) this.record(command, await this.parse(merged), await this.parse(result));

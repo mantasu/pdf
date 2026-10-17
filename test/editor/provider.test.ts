@@ -132,21 +132,21 @@ describe("PdfProvider", () => {
     const context = { extensionUri: Uri.file(process.cwd()), globalState: memento, subscriptions: [] as unknown[] };
     PdfProvider.register(context as never);
     expect(window.registerCustomEditorProvider).toHaveBeenCalledWith(
-      "pdf.viewer",
+      "pdf-editor.viewer",
       expect.any(PdfProvider),
       { webviewOptions: { retainContextWhenHidden: true }, supportsMultipleEditorsPerDocument: false },
     );
     expect([...registeredCommands.keys()].sort()).toEqual(
       [
-        "pdf.deletePage",
-        "pdf.insertBlankPageAfter",
-        "pdf.insertBlankPageBefore",
-        "pdf.movePageDown",
-        "pdf.movePageUp",
-        "pdf.print",
-        "pdf.rotatePage",
-        "pdf.askInChat",
-        "pdf.chooseCopilotModel",
+        "pdf-editor.deletePage",
+        "pdf-editor.insertBlankPageAfter",
+        "pdf-editor.insertBlankPageBefore",
+        "pdf-editor.movePageDown",
+        "pdf-editor.movePageUp",
+        "pdf-editor.print",
+        "pdf-editor.rotatePage",
+        "pdf-editor.askInChat",
+        "pdf-editor.chooseCopilotModel",
       ].sort(),
     );
     expect(context.subscriptions).toHaveLength(11);
@@ -155,9 +155,9 @@ describe("PdfProvider", () => {
   test("registered commands reach the active document", async () => {
     const context = { extensionUri: Uri.file(process.cwd()), globalState: memento, subscriptions: [] as unknown[] };
     PdfProvider.register(context as never);
-    await registeredCommands.get("pdf.print")!();
-    await registeredCommands.get("pdf.rotatePage")!(1);
-    await registeredCommands.get("pdf.chooseCopilotModel")!();
+    await registeredCommands.get("pdf-editor.print")!();
+    await registeredCommands.get("pdf-editor.rotatePage")!(1);
+    await registeredCommands.get("pdf-editor.chooseCopilotModel")!();
     expect(shownWarnings).toEqual(["PDF Viewer: open a PDF first.", "PDF Viewer: open a PDF first.", expect.stringContaining("No language model")]);
   });
 
@@ -173,7 +173,7 @@ describe("PdfProvider", () => {
     const { fake, provider, document } = await openViewer();
     expect(html.render).toHaveBeenLastCalledWith(fake.panel.webview, uri, {});
     await fake.send({ type: "preferences", preferences: { recentColors: ["#123456"] } });
-    expect(memento.update).toHaveBeenCalledWith("pdf.preferences", { recentColors: ["#123456"] });
+    expect(memento.update).toHaveBeenCalledWith("pdf-editor.preferences", { recentColors: ["#123456"] });
     provider.resolveCustomEditor(document, stubPanel().panel as never);
     expect(html.render).toHaveBeenLastCalledWith(expect.anything(), uri, { recentColors: ["#123456"] });
   });
@@ -279,9 +279,9 @@ describe("PdfProvider", () => {
   test("runs allowlisted commands only, and reports webview errors", async () => {
     const { fake } = await openViewer();
     await fake.send({ type: "command", command: "undo" });
-    await fake.send({ type: "command", command: "pdf.print", args: [] });
+    await fake.send({ type: "command", command: "pdf-editor.print", args: [] });
     await fake.send({ type: "command", command: "workbench.action.terminal.new" });
-    expect(executedCommands.map((c) => c.command)).toEqual(["undo", "pdf.print"]);
+    expect(executedCommands.map((c) => c.command)).toEqual(["undo", "pdf-editor.print"]);
     await fake.send({ type: "error", message: "boom" });
     expect(shownErrors).toEqual(["PDF Viewer: boom"]);
   });
@@ -491,7 +491,7 @@ describe("PdfProvider", () => {
     expect(prompt).toContain("Document: draft.pdf, page 2.");
   });
 
-  test("Ask Copilot uses the model named in pdf.copilot.model", async () => {
+  test("Ask Copilot uses the model named in pdf-editor.copilot.model", async () => {
     const { fake } = await openViewer();
     languageModels.push(fakeModel(["from Copilot"]), fakeModel(["from Claude"], 64_000, { id: "claude-x", name: "Claude X", family: "claude", vendor: "anthropic" }));
     configuration.set("copilot.model", "claude-x");
@@ -568,8 +568,8 @@ describe("PdfProvider", () => {
   test("Continue in Chat opens Copilot Chat with @pdf", async () => {
     const context = { extensionUri: Uri.file(process.cwd()), globalState: memento, subscriptions: [] as unknown[] };
     PdfProvider.register(context as never);
-    await registeredCommands.get("pdf.askInChat")!("@pdf /explain ", true);
-    await registeredCommands.get("pdf.askInChat")!();
+    await registeredCommands.get("pdf-editor.askInChat")!("@pdf /explain ", true);
+    await registeredCommands.get("pdf-editor.askInChat")!();
     expect(executedCommands).toEqual([
       { command: "workbench.action.chat.open", args: [{ query: "@pdf /explain ", isPartialQuery: true }] },
       { command: "workbench.action.chat.open", args: [{ query: "@pdf ", isPartialQuery: false }] },

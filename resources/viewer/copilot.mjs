@@ -34,7 +34,7 @@ export function copilotMenu(selection) {
   return [
     ...Object.entries(ACTIONS).map(([action, label]) => ({ label: action === "ask" ? "Ask a Question…" : label, icon: ICON.copilot, action: () => openCopilot(selection, action) })),
     { separator: true },
-    { label: "Ask in Copilot Chat (@pdf)…", action: () => hostCommand("pdf.askInChat", "@pdf ", true) },
+    { label: "Ask in Copilot Chat (@pdf)…", action: () => hostCommand("pdf-editor.askInChat", "@pdf ", true) },
   ];
 }
 
@@ -153,7 +153,7 @@ function answerSection() {
   const { contents } = fromMarkdown(text);
   const buttons = done
     ? [
-        textButton("Continue in Chat", () => hostCommand("pdf.askInChat", `${CHAT_QUERIES[action]}${action === "ask" ? question : ""}`, true)),
+        textButton("Continue in Chat", () => hostCommand("pdf-editor.askInChat", `${CHAT_QUERIES[action]}${action === "ask" ? question : ""}`, true)),
         contents && textButton("Copy", () => copyToClipboard(contents)),
         contents && !model.readOnlyReason() && textButton("Add as Comment", addAsComment, true),
       ]

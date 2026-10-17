@@ -10,9 +10,9 @@ import { fracBox, scrollToThread } from "./layers.mjs";
 import { richNodes } from "./richtext.mjs";
 import { TEXT_MARKS } from "./tools.mjs";
 
-const STORED_WIDTH = "pdf.commentsPanelWidth";
-const STORED_OPEN = "pdf.commentsPanelOpen";
-const STORED_HIDE_CLOSED = "pdf.commentsHideClosed";
+const STORED_WIDTH = "pdf-editor.commentsPanelWidth";
+const STORED_OPEN = "pdf-editor.commentsPanelOpen";
+const STORED_HIDE_CLOSED = "pdf-editor.commentsHideClosed";
 const TYPE_FILTERS = {
   all: { label: "All types", test: () => true },
   notes: { label: "Sticky notes", test: (a) => a.kind === "note" },

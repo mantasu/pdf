@@ -1,5 +1,5 @@
 {
-  "name": "pdf",
+  "name": "pdf-editor",
   "displayName": "PDF Viewer & Editor",
   "description": "Read, highlight, comment on and draw over PDFs in VS Code, Acrobat-compatible",
   "version": "1.0.0",
@@ -7,7 +7,7 @@
   "icon": "resources/media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mantasu/pdf"
+    "url": "https://github.com/mantasu/pdf-editor"
   },
   "license": "MIT",
   "engines": {
@@ -58,7 +58,7 @@
     "configuration": {
       "title": "PDF Viewer & Editor",
       "properties": {
-        "pdf.defaultZoomValue": {
+        "pdf-editor.defaultZoomValue": {
           "type": "string",
           "default": "auto",
           "scope": "resource",
@@ -76,7 +76,7 @@
           ],
           "description": "Default zoom level when opening a PDF."
         },
-        "pdf.sidebarViewOnLoad": {
+        "pdf-editor.sidebarViewOnLoad": {
           "type": "number",
           "default": 0,
           "scope": "resource",
@@ -94,7 +94,7 @@
           ],
           "description": "pdf.js side panel to show when opening a PDF."
         },
-        "pdf.presetColors": {
+        "pdf-editor.presetColors": {
           "type": "array",
           "items": {
             "type": "string",
@@ -111,19 +111,19 @@
           "scope": "resource",
           "markdownDescription": "Preset colors as `Name=#RRGGBB` (up to five), shared by every tool; text and Fill & Sign marks use black and darker shades of them. Any other color can be picked with the custom color button."
         },
-        "pdf.authorName": {
+        "pdf-editor.authorName": {
           "type": "string",
           "default": "",
           "scope": "resource",
           "markdownDescription": "Author name on new comments and drawings (`/T`). Defaults to your operating-system user name."
         },
-        "pdf.copilot.model": {
+        "pdf-editor.copilot.model": {
           "type": "string",
           "default": "",
           "scope": "resource",
           "markdownDescription": "Language model for the viewer's **Ask Copilot** actions: a model id or name as listed by **PDF: Choose Copilot Model…**, e.g. a Claude, GPT or Gemini model from Copilot, or one added with your own API key. Empty picks a Copilot model. `@pdf` in the chat uses the model chosen there."
         },
-        "pdf.printCommand": {
+        "pdf-editor.printCommand": {
           "type": "string",
           "default": "",
           "scope": "resource",
@@ -133,7 +133,7 @@
     },
     "customEditors": [
       {
-        "viewType": "pdf.viewer",
+        "viewType": "pdf-editor.viewer",
         "displayName": "PDF Viewer & Editor",
         "selector": [
           {
@@ -145,42 +145,42 @@
     ],
     "commands": [
       {
-        "command": "pdf.rotatePage",
+        "command": "pdf-editor.rotatePage",
         "title": "Rotate Page",
         "category": "PDF"
       },
       {
-        "command": "pdf.deletePage",
+        "command": "pdf-editor.deletePage",
         "title": "Delete Current Page",
         "category": "PDF"
       },
       {
-        "command": "pdf.movePageUp",
+        "command": "pdf-editor.movePageUp",
         "title": "Move Current Page Up",
         "category": "PDF"
       },
       {
-        "command": "pdf.movePageDown",
+        "command": "pdf-editor.movePageDown",
         "title": "Move Current Page Down",
         "category": "PDF"
       },
       {
-        "command": "pdf.insertBlankPageBefore",
+        "command": "pdf-editor.insertBlankPageBefore",
         "title": "Insert Blank Page Before",
         "category": "PDF"
       },
       {
-        "command": "pdf.insertBlankPageAfter",
+        "command": "pdf-editor.insertBlankPageAfter",
         "title": "Insert Blank Page After",
         "category": "PDF"
       },
       {
-        "command": "pdf.print",
+        "command": "pdf-editor.print",
         "title": "Print Current PDF",
         "category": "PDF"
       },
       {
-        "command": "pdf.chooseCopilotModel",
+        "command": "pdf-editor.chooseCopilotModel",
         "title": "Choose Copilot Model…",
         "category": "PDF"
       }

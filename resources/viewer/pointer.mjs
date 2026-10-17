@@ -20,12 +20,12 @@ const DOUBLE_CLICK_MS = 450;
 /** Fill & Sign marks placed with one click, centred on it: size in PDF points (0: the item brings its own). */
 const MARK_SIZES = { check: 14, cross: 14, dot: 6, signature: 0, image: 0 };
 const PAGE_COMMANDS = [
-  ["Rotate Page", "pdf.rotatePage"],
-  ["Delete Page", "pdf.deletePage"],
-  ["Move Page Up", "pdf.movePageUp"],
-  ["Move Page Down", "pdf.movePageDown"],
-  ["Insert Blank Page Before", "pdf.insertBlankPageBefore"],
-  ["Insert Blank Page After", "pdf.insertBlankPageAfter"],
+  ["Rotate Page", "pdf-editor.rotatePage"],
+  ["Delete Page", "pdf-editor.deletePage"],
+  ["Move Page Up", "pdf-editor.movePageUp"],
+  ["Move Page Down", "pdf-editor.movePageDown"],
+  ["Insert Blank Page Before", "pdf-editor.insertBlankPageBefore"],
+  ["Insert Blank Page After", "pdf-editor.insertBlankPageAfter"],
 ];
 
 let gesture = null;
@@ -458,7 +458,7 @@ function pageMenu(point) {
     ...PAGE_COMMANDS.map(([label, command]) => ({ label, action: () => hostCommand(command, pageNumber), disabled })),
     { separator: true },
     { label: "Save", action: () => hostCommand("workbench.action.files.save") },
-    { label: "Print…", action: () => hostCommand("pdf.print") },
+    { label: "Print…", action: () => hostCommand("pdf-editor.print") },
   ];
 }
 

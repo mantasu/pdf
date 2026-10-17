@@ -10,7 +10,7 @@ import { Uri, env, window, workspace } from "vscode";
  * the OS default PDF application.
  */
 export async function printDocument(data: Uint8Array, name: string): Promise<void> {
-  const command = workspace.getConfiguration("pdf").get<string>("printCommand", "").trim();
+  const command = workspace.getConfiguration("pdf-editor").get<string>("printCommand", "").trim();
   const file = join(await mkdtemp(join(tmpdir(), "pdf-print-")), name.endsWith(".pdf") ? name : `${name}.pdf`);
   const uri = Uri.file(file);
   await workspace.fs.writeFile(uri, data);

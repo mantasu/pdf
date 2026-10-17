@@ -1,7 +1,7 @@
 /**
  * Copilot access through VS Code's Language Model API: the user's own subscription, or a model added
  * with their own key (Anthropic, OpenAI, ...), never a key of ours. VS Code asks once whether the
- * extension may use a model. The `pdf.copilot.model` setting picks one; else a Copilot model is used.
+ * extension may use a model. The `pdf-editor.copilot.model` setting picks one; else a Copilot model is used.
  */
 import { CancellationToken, ConfigurationTarget, LanguageModelChat, LanguageModelChatMessage, LanguageModelError, lm, window, workspace } from "vscode";
 
@@ -53,14 +53,14 @@ export async function askChat(prompt: string, token: CancellationToken, onText: 
   }
 }
 
-/** "PDF: Choose Copilot Model…": every model VS Code offers, saved to the user's `pdf.copilot.model`. */
+/** "PDF: Choose Copilot Model…": every model VS Code offers, saved to the user's `pdf-editor.copilot.model`. */
 export async function pickModel(): Promise<void> {
   const models = await lm.selectChatModels();
   if (!models.length) {
     await window.showWarningMessage(NO_CHAT);
     return;
   }
-  const settings = workspace.getConfiguration("pdf");
+  const settings = workspace.getConfiguration("pdf-editor");
   const current = settings.get<string>(MODEL_SETTING, "").trim().toLowerCase();
   const items = [
     { label: "Automatic", description: "a Copilot model", id: "", picked: !current },
